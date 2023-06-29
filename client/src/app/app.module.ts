@@ -5,7 +5,6 @@ import { HttpClientModule } from '@angular/common/http';
 import { AppComponent } from './app.component';
 import { FileUploadComponent } from './components/file-upload/file-upload.component';
 import { PokemonTeamComponent } from './components/pokemon-team/pokemon-team.component';
-import { AdDirectiveDirective } from './shared/ad-directive.directive';
 import { PartyDirectiveDirective } from './shared/party-directive.directive';
 import { PartySlotComponent } from './components/party-slot/party-slot.component';
 
@@ -14,7 +13,6 @@ import { PartySlotComponent } from './components/party-slot/party-slot.component
     AppComponent,
     FileUploadComponent,
     PokemonTeamComponent,
-    AdDirectiveDirective,
     PartyDirectiveDirective,
     PartySlotComponent
   ],
