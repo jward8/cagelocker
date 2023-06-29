@@ -8,6 +8,7 @@ import { FileService } from './shared/file.service';
 })
 export class AppComponent implements OnInit{
   private file: String | ArrayBuffer | null = '';
+  private isTeamGenerated: boolean = false;
 
   constructor(private fileService: FileService) {}
 
@@ -28,6 +29,10 @@ export class AppComponent implements OnInit{
   }
 
   uploadFile() {
-    console
+    if (this.fileService.team.length !== 0) {
+
+    }
   }
+
+
 }

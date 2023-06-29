@@ -26,13 +26,42 @@ class Route {
     setPokemon(pokemonPool) {
         this.pokemon = pokemonPool;
     }
+
+    getPokemon() {
+        return this.pokemon;
+    }
+
+    getName() {
+        return this.name;
+    }
 }
 
 class Pokemon {
-    constructor(name, minLevel, maxLevel) {
+    constructor(name, minLevel, maxLevel, routeCaught = null) {
         this.name = name;
         this.minLevel = minLevel;
         this.maxLevel = maxLevel;
+        this.routeCaught = routeCaught;
+    }
+
+    getName() {
+        return this.name;
+    }
+
+    getMinLevel() {
+        return this.minLevel;
+    }
+
+    getMaxLevel() {
+        return this.maxLevel;
+    }
+
+    setRouteCaught(routeName) {
+        this.routeCaught = routeName;
+    }
+
+    getRouteCaught() {
+        return this.routeCaught;
     }
 }
 
@@ -54,7 +83,7 @@ app.get("/api", async (req, res) => {
     res.send({data: "received"});
 });
 
-app.post("/api/upload", upload.single('file'), (req, res) => {
+app.post("/api/upload", upload.single('file'), async (req, res) => {
     const uploadedFile = req.file;
 
     if (uploadedFile) {
@@ -64,8 +93,16 @@ app.post("/api/upload", upload.single('file'), (req, res) => {
 
         console.log('filename: %s, size: %d, mimetype: %s', filename, size, mimetype);
 
-        gatherRoute(uploadedFile);
-        res.status(200).json({ message: 'File uploaded succesfully' });
+        try {
+            const result = await gatherRoute(uploadedFile);
+            while (result === undefined) {
+
+            }
+            res.status(200).json({ message: 'File uploaded succesfully', data: result });
+        } catch (err) {
+            console.error('Error processing file:', err);
+            res.status(500).json({ message: 'Error processing file' });
+        }
     } else {
         res.status(400).json({ message: 'No file was uploaded' });
     }
@@ -76,32 +113,45 @@ app.listen(PORT, () => {
     console.log(`Listening on Port ${PORT}`);
 });
 
-function gatherRoute(file) {
-    let wildPokemonSection;
-    let routeCollection;
-    fs.readFile(file.path, 'utf8', (err, data) => {
-        if (err) {
-            console.error('Error reading file:', err);
-            res.status(500).json({ message: 'Error reading file' });
-        } else {
-            const wildPokemonTerm = '--Wild Pokemon--';
-            const tmMovesTerm = '--TM Moves--';
-            const wildPokemonIndex = data.indexOf(wildPokemonTerm);
-            const tmMovesTermIndex = data.indexOf(tmMovesTerm);
-            let routePool;
+async function gatherRoute(file) {
+    return new Promise((resolve, reject) => {
+        let wildPokemonSection;
+        let routeCollection;
+        let generatedTeam;
+        fs.readFile(file.path, 'utf8', async (err, data) => {
+            if (err) {
+                console.error('Error reading file:', err);
+                res.status(500).json({ message: 'Error reading file' });
+            } else {
+                const wildPokemonTerm = '--Wild Pokemon--';
+                const tmMovesTerm = '--TM Moves--';
+                const wildPokemonIndex = data.indexOf(wildPokemonTerm);
+                const tmMovesTermIndex = data.indexOf(tmMovesTerm);
+                let routePool;
 
-            if (wildPokemonIndex !== -1 && tmMovesTermIndex !== -1) {
-                const startIndex = wildPokemonIndex + wildPokemonTerm.length;
-                wildPokemonSection = data.substring(startIndex, tmMovesTermIndex);
-                routeCollection = wildPokemonSection.split('Set #');
-                
-                routePool = routeCollection.map((route) => cleanRouteInfo(route));
+                if (wildPokemonIndex !== -1 && tmMovesTermIndex !== -1) {
+                    const startIndex = wildPokemonIndex + wildPokemonTerm.length;
+                    wildPokemonSection = data.substring(startIndex, tmMovesTermIndex);
+                    routeCollection = wildPokemonSection.split('Set #');
+
+                    routePool = await Promise.all(routeCollection.map(async (route) => {
+                        return await cleanRouteInfo(route);
+                    }))
+                    formulateTeam(routePool).then(result => {
+                        generatedTeam = result;
+                        resolve(generatedTeam);
+                    }).catch((err) => {
+                        reject(err);
+                    })
+                } else {
+                    reject('Error with file formatting');
+                }
             }
-        }
-    })
+        })
+    });
 }
 
-function cleanRouteInfo(route) {
+async function cleanRouteInfo(route) {
     let lines = route.split('\n');
     let routeMetadata = new Route();
     let pokemonPool = [];
@@ -129,7 +179,9 @@ function cleanRouteInfo(route) {
         } else {
             let routeInfo = lines[i].split(' - ');
             let attributeIndex = Number.MAX_SAFE_INTEGER;
-            const routeAttributes = ['Headbutt', 'Swarms', 'Old Rod', 'Good Rod', 'Super Rod', 'Radio', 'Surfing', 'Night', 'Rock Smash', '(Post-National Dex'];
+            const routeAttributes = ['Grass/Cave', 'Fishing', 'Headbutt', 'Swarms', 'Old Rod',
+             'Good Rod', 'Super Rod', 'Radio', 'Surfing', 'Night', 'Rock Smash',
+              '(Post-National Dex', 'Hoenn/Sinnoh'];
             const headbutt = routeInfo[1].includes('Headbutt');
             const swarm = routeInfo[1].includes('Swarms');
             const oldRod = routeInfo[1].includes('Old Rod');
@@ -162,4 +214,22 @@ function cleanRouteInfo(route) {
     }
     routeMetadata.setPokemon(pokemonPool);
     return routeMetadata;
+}
+
+
+async function formulateTeam(routeMetadata) {
+    let team = [];
+    for (let i = 0; i < 6; ++i) {
+        const randomRouteIndex = Math.floor(Math.random() * routeMetadata.length);
+        const route = routeMetadata[randomRouteIndex];
+
+        const randomPokemonIndex = Math.floor(Math.random() * route.getPokemon().length);
+        const pokemon = route.getPokemon()[randomPokemonIndex];
+        const min = parseInt(pokemon.getMinLevel(), 10);
+        const max = parseInt(pokemon.getMaxLevel(), 10);
+
+        const level = Math.floor(Math.random() * (max - min + 1)) + min;
+        team.push(new Pokemon(pokemon.getName(), level, level, route.getName()));
+    }
+    return team;
 }
