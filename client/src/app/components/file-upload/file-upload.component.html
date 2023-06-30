@@ -1,5 +1,11 @@
-<form (submit)="uploadFile()">
-    <input type="file" (change)="onFileSelected($event)">
-    <button type="submit">Upload</button>
-</form>
+<div>
+    <form (submit)="uploadFile()">
+        <input type="file" (change)="onFileSelected($event)">
+        <button type="submit">Upload</button>
+    </form>
+</div>
+<div class="party">
+    <div #partyContainer></div>
+</div>
+
 

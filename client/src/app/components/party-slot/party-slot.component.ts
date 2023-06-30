@@ -1,4 +1,5 @@
-import { Component } from '@angular/core';
+import { Component, Input } from '@angular/core';
+import { Pokemon } from '../file-upload/file-upload.component';
 
 @Component({
   selector: 'app-party-slot',
@@ -6,5 +7,7 @@ import { Component } from '@angular/core';
   styleUrls: ['./party-slot.component.scss']
 })
 export class PartySlotComponent {
+  @Input() pokemon!: Pokemon;
+  @Input() sprite!: string | undefined;
 
 }

@@ -91,8 +91,6 @@ app.post("/api/upload", upload.single('file'), async (req, res) => {
         const size = uploadedFile.size;
         const mimetype = uploadedFile.mimetype;
 
-        console.log('filename: %s, size: %d, mimetype: %s', filename, size, mimetype);
-
         try {
             const result = await gatherRoute(uploadedFile);
             while (result === undefined) {
@@ -124,14 +122,14 @@ async function gatherRoute(file) {
                 res.status(500).json({ message: 'Error reading file' });
             } else {
                 const wildPokemonTerm = '--Wild Pokemon--';
-                const tmMovesTerm = '--TM Moves--';
+                const stopTerm = '--In-Game Trades--';
                 const wildPokemonIndex = data.indexOf(wildPokemonTerm);
-                const tmMovesTermIndex = data.indexOf(tmMovesTerm);
+                const stopTermIndex = data.indexOf(stopTerm);
                 let routePool;
 
-                if (wildPokemonIndex !== -1 && tmMovesTermIndex !== -1) {
+                if (wildPokemonIndex !== -1 && stopTermIndex !== -1) {
                     const startIndex = wildPokemonIndex + wildPokemonTerm.length;
-                    wildPokemonSection = data.substring(startIndex, tmMovesTermIndex);
+                    wildPokemonSection = data.substring(startIndex, stopTermIndex);
                     routeCollection = wildPokemonSection.split('Set #');
 
                     routePool = await Promise.all(routeCollection.map(async (route) => {
